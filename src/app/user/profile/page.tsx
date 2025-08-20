@@ -45,25 +45,25 @@ type Profile = {
 };
 
 // Modal Component for Confirmations
-const ConfirmModal = ({ 
-  isOpen, 
-  title, 
-  message, 
-  confirmText, 
-  cancelText, 
-  onConfirm, 
-  onCancel 
-}: { 
-  isOpen: boolean; 
-  title: string; 
-  message: string; 
-  confirmText: string; 
-  cancelText: string; 
-  onConfirm: () => void; 
-  onCancel: () => void; 
+const ConfirmModal = ({
+  isOpen,
+  title,
+  message,
+  confirmText,
+  cancelText,
+  onConfirm,
+  onCancel
+}: {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText: string;
+  cancelText: string;
+  onConfirm: () => void;
+  onCancel: () => void;
 }) => {
   if (!isOpen) return null;
-  
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-sm shadow-lg max-w-md w-full">
@@ -91,12 +91,12 @@ const ConfirmModal = ({
 };
 
 // Form components
-const ExperienceForm = ({ 
-  onSubmit, 
-  onCancel 
-}: { 
-  onSubmit: (data: Experience) => void; 
-  onCancel: () => void; 
+const ExperienceForm = ({
+  onSubmit,
+  onCancel
+}: {
+  onSubmit: (data: Experience) => void;
+  onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState<Experience>({
     title: '',
@@ -107,26 +107,26 @@ const ExperienceForm = ({
     current: false,
     description: ''
   });
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: checked }));
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
   };
-  
+
   return (
     <div className="bg-white rounded-sm shadow-md p-6 mb-6">
       <h3 className="text-lg font-semibold mb-4">Add Experience</h3>
-      
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
@@ -140,7 +140,7 @@ const ExperienceForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Company*</label>
             <input
@@ -152,7 +152,7 @@ const ExperienceForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
             <input
@@ -163,7 +163,7 @@ const ExperienceForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">From Date*</label>
             <input
@@ -175,7 +175,7 @@ const ExperienceForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
-          
+
           <div className="flex items-center mt-2">
             <input
               type="checkbox"
@@ -189,7 +189,7 @@ const ExperienceForm = ({
               Current Position
             </label>
           </div>
-          
+
           {!formData.current && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
@@ -203,7 +203,7 @@ const ExperienceForm = ({
             </div>
           )}
         </div>
-        
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
           <textarea
@@ -214,7 +214,7 @@ const ExperienceForm = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
           />
         </div>
-        
+
         <div className="flex justify-end space-x-3">
           <button
             type="button"
@@ -235,12 +235,12 @@ const ExperienceForm = ({
   );
 };
 
-const EducationForm = ({ 
-  onSubmit, 
-  onCancel 
-}: { 
-  onSubmit: (data: Education) => void; 
-  onCancel: () => void; 
+const EducationForm = ({
+  onSubmit,
+  onCancel
+}: {
+  onSubmit: (data: Education) => void;
+  onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState<Education>({
     school: '',
@@ -251,26 +251,26 @@ const EducationForm = ({
     current: false,
     description: ''
   });
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: checked }));
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
   };
-  
+
   return (
     <div className="bg-white rounded-sm shadow-md p-6 mb-6">
       <h3 className="text-lg font-semibold mb-4">Add Education</h3>
-      
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
@@ -284,7 +284,7 @@ const EducationForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Degree*</label>
             <input
@@ -296,7 +296,7 @@ const EducationForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Field of Study*</label>
             <input
@@ -308,7 +308,7 @@ const EducationForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">From Date*</label>
             <input
@@ -320,7 +320,7 @@ const EducationForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
-          
+
           <div className="flex items-center mt-2">
             <input
               type="checkbox"
@@ -334,7 +334,7 @@ const EducationForm = ({
               Currently Studying
             </label>
           </div>
-          
+
           {!formData.current && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
@@ -348,7 +348,7 @@ const EducationForm = ({
             </div>
           )}
         </div>
-        
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
           <textarea
@@ -359,7 +359,7 @@ const EducationForm = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
           />
         </div>
-        
+
         <div className="flex justify-end space-x-3">
           <button
             type="button"
@@ -380,6 +380,115 @@ const EducationForm = ({
   );
 };
 
+const SkillsForm = ({
+  currentSkills = [],
+  onSubmit,
+  onCancel
+}: {
+  currentSkills?: string[];
+  onSubmit: (skills: string[]) => void;
+  onCancel: () => void;
+}) => {
+  const [skills, setSkills] = useState<string[]>(currentSkills);
+  const [newSkill, setNewSkill] = useState('');
+
+  const handleAddSkill = () => {
+    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+      setSkills([...skills, newSkill.trim()]);
+      setNewSkill('');
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setSkills(skills.filter(skill => skill !== skillToRemove));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSkill();
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(skills);
+  };
+
+  return (
+    <div className="bg-white rounded-sm shadow-md p-6 mb-6">
+      <h3 className="text-lg font-semibold mb-4">Manage Skills</h3>
+
+      <form onSubmit={handleSubmit}>
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Add Skills</label>
+          <div className="flex">
+            <input
+              type="text"
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-grow px-3 py-2 border border-gray-300 rounded-l-sm focus:outline-none focus:ring-1 focus:ring-black"
+              placeholder="e.g., JavaScript, React, UI Design"
+            />
+            <button
+              type="button"
+              onClick={handleAddSkill}
+              className="px-4 py-2 bg-gray-800 text-white rounded-r-sm hover:bg-black"
+            >
+              Add
+            </button>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">Press Enter to add a skill</p>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Current Skills</label>
+          {skills.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {skills.map((skill, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-100 px-3 py-1 rounded-sm text-gray-800 flex items-center"
+                >
+                  {skill}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSkill(skill)}
+                    className="ml-2 text-gray-500 hover:text-red-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">No skills added yet</p>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-black text-white rounded-sm hover:bg-gray-800"
+          >
+            Save Skills
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const { isAuthenticated, token, logout } = useAuth();
@@ -390,7 +499,8 @@ export default function ProfilePage() {
   const [showEducationForm, setShowEducationForm] = useState(false);
   const [deleteAccountModal, setDeleteAccountModal] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  
+  const [showSkillsForm, setShowSkillsForm] = useState(false);
+
   // Fetch user profile
   useEffect(() => {
     const fetchProfile = async () => {
@@ -398,7 +508,7 @@ export default function ProfilePage() {
         router.push('/auth/login');
         return;
       }
-      
+
       try {
         setLoading(true);
         const response = await axios.get<Profile>('http://localhost:5000/api/users/me', {
@@ -428,10 +538,42 @@ export default function ProfilePage() {
     });
   };
 
+  // Update skills in profile
+  const updateSkills = async (skills: string[]) => {
+    if (!token) return;
+
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/users/skills',
+        { skills },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      // Update the profile state with the new skills
+      setProfile(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          skills: skills
+        };
+      });
+
+      setShowSkillsForm(false);
+      showNotification('success', 'Skills updated successfully');
+    } catch (err: any) {
+      console.error('Error updating skills:', err);
+      showNotification('error', err.response?.data?.message || 'Failed to update skills');
+    }
+  };
+
   // Add experience to profile
   const addExperience = async (experienceData: Experience) => {
     if (!token) return;
-    
+
     try {
       const response = await axios.post(
         'http://localhost:5000/api/users/experience',
@@ -442,7 +584,7 @@ export default function ProfilePage() {
           }
         }
       );
-      
+
       // Update the profile state with the new experience
       setProfile(prev => {
         if (!prev) return prev;
@@ -452,7 +594,7 @@ export default function ProfilePage() {
           experience: [...(prev.experience || []), data.experience]
         };
       });
-      
+
       setShowExperienceForm(false);
       showNotification('success', 'Experience added successfully');
     } catch (err: any) {
@@ -464,7 +606,7 @@ export default function ProfilePage() {
   // Add education to profile
   const addEducation = async (educationData: Education) => {
     if (!token) return;
-    
+
     try {
       const response = await axios.post(
         'http://localhost:5000/api/users/education',
@@ -475,7 +617,7 @@ export default function ProfilePage() {
           }
         }
       );
-      
+
       // Update the profile state with the new education
       setProfile(prev => {
         if (!prev) return prev;
@@ -484,7 +626,7 @@ export default function ProfilePage() {
           education: [...(prev.education || []), (response.data as { education: Education }).education]
         };
       });
-      
+
       setShowEducationForm(false);
       showNotification('success', 'Education added successfully');
     } catch (err: any) {
@@ -496,14 +638,14 @@ export default function ProfilePage() {
   // Delete user account
   const deleteAccount = async () => {
     if (!token) return;
-    
+
     try {
       await axios.delete('http://localhost:5000/api/users', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      
+
       // Log out the user after account deletion
       logout();
       router.push('/');
@@ -570,21 +712,20 @@ export default function ProfilePage() {
       <div className="max-w-4xl mx-auto px-4">
         {/* Notification */}
         {notification && (
-          <div 
-            className={`mb-6 p-4 rounded-sm ${
-              notification.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-            }`}
+          <div
+            className={`mb-6 p-4 rounded-sm ${notification.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+              }`}
           >
             {notification.message}
           </div>
         )}
-        
+
         {/* Header with actions */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Your Profile</h1>
           <div className="flex space-x-3">
-            <Link 
-              href="/user/dashboard" 
+            <Link
+              href="/user/dashboard"
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50"
             >
               Dashboard
@@ -597,7 +738,7 @@ export default function ProfilePage() {
             </Link>
           </div>
         </div>
-        
+
         {/* Personal Information Section */}
         <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
           <div className="flex flex-col sm:flex-row items-start">
@@ -614,22 +755,22 @@ export default function ProfilePage() {
                 <span>{profile.firstName.charAt(0)}</span>
               )}
             </div>
-            
+
             <div className="flex-1">
               <h2 className="text-xl font-semibold mb-3">{profile.firstName} {profile.lastName}</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-sm text-gray-500">Email</p>
                   <p className="font-medium">{profile.email}</p>
                 </div>
-                
+
                 <div>
                   <p className="text-sm text-gray-500">Location</p>
                   <p className="font-medium">{profile.location || 'Not specified'}</p>
                 </div>
               </div>
-              
+
               {profile.bio && (
                 <div className="mt-4">
                   <p className="text-sm text-gray-500">Bio</p>
@@ -639,12 +780,12 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-        
+
         {/* Resume Section (if applicable) */}
         {profile.resume && (
           <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Resume</h2>
-            
+
             <div className="flex items-center justify-between bg-gray-50 p-4 rounded-sm">
               <div className="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -655,10 +796,10 @@ export default function ProfilePage() {
                   <p className="text-sm text-gray-500">Uploaded resume document</p>
                 </div>
               </div>
-              
-              <a 
-                href={profile.resume} 
-                target="_blank" 
+
+              <a
+                href={profile.resume}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="px-3 py-1 bg-black text-white text-sm rounded-sm hover:bg-gray-800"
               >
@@ -667,34 +808,51 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
-        
+
         {/* Skills Section */}
         <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Skills</h2>
+            <button
+              onClick={() => setShowSkillsForm(true)}
+              className="text-black hover:text-gray-600 font-medium text-sm flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Manage Skills
+            </button>
           </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {profile.skills && profile.skills.length > 0 ? (
-              profile.skills.map((skill, index) => (
-                <span 
-                  key={index} 
-                  className="bg-gray-100 px-3 py-1 rounded-sm text-gray-800"
-                >
-                  {skill}
-                </span>
-              ))
-            ) : (
-              <p className="text-gray-500">No skills added yet</p>
-            )}
-          </div>
+
+          {showSkillsForm ? (
+            <SkillsForm
+              currentSkills={profile.skills}
+              onSubmit={updateSkills}
+              onCancel={() => setShowSkillsForm(false)}
+            />
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {profile.skills && profile.skills.length > 0 ? (
+                profile.skills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="bg-gray-100 px-3 py-1 rounded-sm text-gray-800"
+                  >
+                    {skill}
+                  </span>
+                ))
+              ) : (
+                <p className="text-gray-500">No skills added yet</p>
+              )}
+            </div>
+          )}
         </div>
-        
+
         {/* Experience Section */}
         <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Experience</h2>
-            <button 
+            <button
               onClick={() => setShowExperienceForm(true)}
               className="text-black hover:text-gray-600 font-medium text-sm flex items-center"
             >
@@ -704,11 +862,11 @@ export default function ProfilePage() {
               Add Experience
             </button>
           </div>
-          
+
           {showExperienceForm ? (
-            <ExperienceForm 
-              onSubmit={addExperience} 
-              onCancel={() => setShowExperienceForm(false)} 
+            <ExperienceForm
+              onSubmit={addExperience}
+              onCancel={() => setShowExperienceForm(false)}
             />
           ) : profile.experience && profile.experience.length > 0 ? (
             <div className="space-y-6">
@@ -734,12 +892,12 @@ export default function ProfilePage() {
             <p className="text-gray-500">No experience added yet</p>
           )}
         </div>
-        
+
         {/* Education Section */}
         <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Education</h2>
-            <button 
+            <button
               onClick={() => setShowEducationForm(true)}
               className="text-black hover:text-gray-600 font-medium text-sm flex items-center"
             >
@@ -749,11 +907,11 @@ export default function ProfilePage() {
               Add Education
             </button>
           </div>
-          
+
           {showEducationForm ? (
-            <EducationForm 
-              onSubmit={addEducation} 
-              onCancel={() => setShowEducationForm(false)} 
+            <EducationForm
+              onSubmit={addEducation}
+              onCancel={() => setShowEducationForm(false)}
             />
           ) : profile.education && profile.education.length > 0 ? (
             <div className="space-y-6">
@@ -778,11 +936,11 @@ export default function ProfilePage() {
             <p className="text-gray-500">No education added yet</p>
           )}
         </div>
-        
+
         {/* Account Actions */}
         <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Account Actions</h2>
-          
+
           <div className="flex flex-col space-y-4">
             <Link
               href="/user/profile/edit"
@@ -793,7 +951,7 @@ export default function ProfilePage() {
               </svg>
               Edit Profile Information
             </Link>
-            
+
             <Link
               href="/user/change-password"
               className="inline-flex items-center text-gray-700 hover:text-black"
@@ -803,7 +961,7 @@ export default function ProfilePage() {
               </svg>
               Change Password
             </Link>
-            
+
             <button
               onClick={() => setDeleteAccountModal(true)}
               className="inline-flex items-center text-red-600 hover:text-red-800"
@@ -815,7 +973,7 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
-        
+
         {/* Delete Account Modal */}
         <ConfirmModal
           isOpen={deleteAccountModal}
