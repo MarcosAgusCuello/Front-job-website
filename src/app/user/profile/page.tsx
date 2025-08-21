@@ -489,6 +489,252 @@ const SkillsForm = ({
   );
 };
 
+const CVManager = ({
+  token,
+  onUpdate
+}: {
+  token: string;
+  onUpdate: (cvInfo: any) => void;
+}) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [cvInfo, setCvInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    // Fetch CV info when component mounts
+    fetchCVInfo();
+  }, []);
+
+  const fetchCVInfo = async () => {
+    try {
+      const response = await axios.get<{ cv?: any }>('http://localhost:5000/api/users/cv/info', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data && response.data.cv) {
+        setCvInfo((response.data as { cv: any }).cv);
+        onUpdate((response.data as { cv: any }).cv);
+      }
+    } catch (err: any) {
+      console.error('Error fetching CV info:', err);
+      if (err.response?.status !== 404) {
+        setError('Error fetching CV info');
+      }
+    }
+  };
+
+  interface FileChangeEvent extends React.ChangeEvent<HTMLInputElement> { }
+
+  const handleFileChange = (e: FileChangeEvent) => {
+    const selectedFile: File | undefined = e.target.files?.[0];
+    if (selectedFile && selectedFile.type !== 'application/pdf') {
+      setError('Only PDF files are allowed');
+      return;
+    }
+    setFile(selectedFile || null);
+    setError('');
+  };
+
+  const handleUpload = async (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    if (!file) return;
+
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    try {
+      // Create a FormData object to send the file
+      const formData = new FormData();
+      formData.append('cv', file);
+
+      const response = await axios.post(
+        'http://localhost:5000/api/users/cv',
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const data = response.data as { cv: any };
+      setCvInfo(data.cv);
+      onUpdate(data.cv);
+      setMessage('CV uploaded successfully');
+      setFile(null);
+    } catch (err) {
+      console.error("Upload error:", err);
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        // @ts-ignore
+        setError(err.response?.data?.message || 'Error uploading CV');
+      } else {
+        setError('Error uploading CV');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      // Show some loading indicator if needed
+      setLoading(true);
+
+      // Make a request with authentication
+      const response = await axios.get('http://localhost:5000/api/users/cv/download', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        responseType: 'blob' // Important: tells axios to handle response as binary data
+      });
+
+      // Create a blob URL from the response data
+      const blob = new Blob([response.data as Blob], {
+        type: response.headers['content-type']
+      });
+      const url = window.URL.createObjectURL(blob);
+
+      // Create a temporary link element to trigger the download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = cvInfo.originalName || 'resume.pdf'; // Use original filename or default
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error downloading CV:', err);
+      setError('Error downloading CV');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    try {
+      await axios.delete('http://localhost:5000/api/users/cv', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCvInfo(null);
+      onUpdate(null);
+      setMessage('CV deleted successfully');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error deleting CV');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' bytes';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+
+  return (
+    <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
+      <h2 className="text-xl font-semibold mb-4">Resume/CV</h2>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-sm">
+          {error}
+        </div>
+      )}
+
+      {message && (
+        <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-sm">
+          {message}
+        </div>
+      )}
+
+      {cvInfo ? (
+        <div>
+          <div className="flex items-center justify-between bg-gray-50 p-4 rounded-sm mb-4">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <div>
+                <p className="font-medium">{cvInfo.originalName}</p>
+                <p className="text-sm text-gray-500">
+                  Uploaded on {new Date(cvInfo.uploadDate).toLocaleDateString()} • {formatFileSize(cvInfo.size)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex space-x-2">
+              <button
+                onClick={handleDownload}
+                disabled={loading}
+                className="px-3 py-1 bg-black text-white text-sm rounded-sm hover:bg-gray-800 disabled:bg-gray-400"
+              >
+                {loading ? 'Downloading...' : 'Download'}
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                className="px-3 py-1 border border-red-300 text-red-600 text-sm rounded-sm hover:bg-red-50"
+              >
+                {loading ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-sm text-gray-500 mb-2">Replace with a new CV</p>
+            <form onSubmit={handleUpload} className="flex items-center">
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                className="flex-1"
+              />
+              <button
+                type="submit"
+                disabled={!file || loading}
+                className="ml-2 px-4 py-2 bg-black text-white rounded-sm hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Uploading...' : 'Upload'}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <p className="text-gray-600 mb-4">
+            Upload your resume or CV to make it easier to apply for jobs. We accept PDF files up to 5MB.
+          </p>
+
+          <form onSubmit={handleUpload} className="flex flex-col sm:flex-row items-start sm:items-center">
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileChange}
+              className="flex-1 mb-2 sm:mb-0"
+            />
+            <button
+              type="submit"
+              disabled={!file || loading}
+              className="px-4 py-2 bg-black text-white rounded-sm hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Uploading...' : 'Upload CV'}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const { isAuthenticated, token, logout } = useAuth();
@@ -568,6 +814,18 @@ export default function ProfilePage() {
       console.error('Error updating skills:', err);
       showNotification('error', err.response?.data?.message || 'Failed to update skills');
     }
+  };
+
+  const updateCV = (cvInfo: any) => {
+    if (!profile) return;
+
+    setProfile(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        resume: cvInfo ? `http://localhost:5000/api/users/cv/download` : undefined
+      };
+    });
   };
 
   // Add experience to profile
@@ -782,32 +1040,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Resume Section (if applicable) */}
-        {profile.resume && (
-          <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Resume</h2>
-
-            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-sm">
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <div>
-                  <p className="font-medium">Your Resume</p>
-                  <p className="text-sm text-gray-500">Uploaded resume document</p>
-                </div>
-              </div>
-
-              <a
-                href={profile.resume}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1 bg-black text-white text-sm rounded-sm hover:bg-gray-800"
-              >
-                View
-              </a>
-            </div>
-          </div>
-        )}
+        {token && <CVManager token={token} onUpdate={updateCV} />}
 
         {/* Skills Section */}
         <div className="bg-white shadow-sm rounded-sm p-6 mb-6">
