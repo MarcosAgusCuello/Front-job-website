@@ -27,7 +27,7 @@ interface User {
         degree: string;
         fieldOfStudy: string;
         from: string;
-        to: string;
+        to?: string;
         current: boolean;
         description?: string;
     }[];
@@ -36,7 +36,7 @@ interface User {
         company: string;
         location: string;
         from: string;
-        to: string;
+        to?: string;
         current: boolean;
         description?: string;
     }[];
@@ -101,18 +101,26 @@ export default function ApplicationReviewPage() {
     // Fetch application details
     useEffect(() => {
         const fetchApplicationDetails = async () => {
-            if (!isAuthenticated || !isCompany || !token) return;
+            if (!isAuthenticated || !isCompany || !token) {
+                console.log("Skipping fetch - Auth prerequisites not met:", {
+                    isAuthenticated,
+                    isCompany,
+                    hasToken: !!token
+                });
+                return;
+            }
 
             setLoading(true);
             setError(null);
 
             try {
+                const applicationId = id;
+
                 const response = await axios.get(
-                    `http://localhost:5000/api/applications/${id}`,
+                    `http://localhost:5000/api/applications/${applicationId}`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
-                            'Content-Type': 'application/json'
                         }
                     }
                 );
@@ -121,6 +129,7 @@ export default function ApplicationReviewPage() {
                 setNotes((response.data as Application).notes || '');
             } catch (err: any) {
                 console.error('Error fetching application details:', err);
+                console.error('Error response:', err.response?.data);
                 setError(err.response?.data?.message || 'Failed to load application details. Please try again.');
             } finally {
                 setLoading(false);
@@ -139,8 +148,9 @@ export default function ApplicationReviewPage() {
         setUpdatingStatus(true);
 
         try {
+            const applicationId = application._id;
             const response = await axios.put(
-                `http://localhost:5000/api/applications/${application._id}/status`,
+                `http://localhost:5000/api/applications/${applicationId}/status`,
                 { status: newStatus },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -161,8 +171,9 @@ export default function ApplicationReviewPage() {
         setSaveNoteStatus('saving');
 
         try {
+            const applicationId = application._id;
             await axios.put(
-                `http://localhost:5000/api/applications/${application._id}/notes`,
+                `http://localhost:5000/api/applications/${applicationId}/notes`,
                 { notes },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -178,6 +189,47 @@ export default function ApplicationReviewPage() {
     // Handle back button
     const handleBack = () => {
         router.back();
+    };
+
+    const handleResumeDownload = async () => {
+        if (!application || !token) return;
+
+        setUpdatingStatus(true);
+
+        try {
+            // Use the specific CV download endpoint
+            const response = await axios.get(
+                `http://localhost:5000/api/applications/${application._id}/cv`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    },
+                    responseType: 'blob'
+                }
+            );
+
+            // Create a blob URL from the response data
+            const blob = new Blob([response.data as ArrayBuffer], {
+                type: 'application/pdf'
+            });
+            const url = window.URL.createObjectURL(blob);
+
+            // Create a temporary link element to trigger the download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${application.user.firstName}_${application.user.lastName}_resume.pdf`;
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(link);
+        } catch (err: any) {
+            console.error('Error downloading resume:', err);
+            alert('Could not download the resume. Please try again.');
+        } finally {
+            setUpdatingStatus(false);
+        }
     };
 
     if (loading) {
@@ -308,33 +360,34 @@ export default function ApplicationReviewPage() {
                                             </a>
                                         </p>
                                         {application.user.location && (
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <div className="flex items-center mt-1 text-sm text-gray-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
                                                 {application.user.location}
-                                            </p>
+                                            </div>
                                         )}
                                     </div>
 
                                     <div className="mt-4 sm:mt-0">
-                                        {application.resume && (
-                                            <a
-                                                href={application.resume}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                View Resume
-                                            </a>
-                                        )}
+                                        <button
+                                            onClick={handleResumeDownload}
+                                            disabled={updatingStatus}
+                                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            {updatingStatus ? 'Downloading...' : 'Download Resume'}
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Skills */}
-                                {application.user.skills && application.user.skills.length > 0 && (
-                                    <div className="mb-6">
-                                        <h4 className="text-sm font-medium text-gray-500 mb-2">Skills</h4>
+                                {/* Skills Section - Always displayed */}
+                                <div className="mb-6">
+                                    <h4 className="text-sm font-medium text-gray-500 mb-2">Skills</h4>
+                                    {application.user.skills && Array.isArray(application.user.skills) && application.user.skills.length > 0 ? (
                                         <div className="flex flex-wrap gap-2">
                                             {application.user.skills.map((skill, index) => (
                                                 <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -342,13 +395,15 @@ export default function ApplicationReviewPage() {
                                                 </span>
                                             ))}
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <p className="text-gray-500 text-sm italic">No skills listed</p>
+                                    )}
+                                </div>
 
-                                {/* Experience */}
-                                {application.user.experience && application.user.experience.length > 0 && (
-                                    <div className="mb-6">
-                                        <h4 className="text-sm font-medium text-gray-500 mb-3">Experience</h4>
+                                {/* Experience Section - Always displayed */}
+                                <div className="mb-6">
+                                    <h4 className="text-sm font-medium text-gray-500 mb-3">Experience</h4>
+                                    {application.user.experience && Array.isArray(application.user.experience) && application.user.experience.length > 0 ? (
                                         <div className="space-y-4">
                                             {application.user.experience.map((exp, index) => (
                                                 <div key={index} className="border-l-2 border-gray-200 pl-4">
@@ -356,7 +411,7 @@ export default function ApplicationReviewPage() {
                                                     <p className="text-gray-700">{exp.company}{exp.location ? `, ${exp.location}` : ''}</p>
                                                     <p className="text-sm text-gray-500">
                                                         {new Date(exp.from).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} -
-                                                        {exp.current ? ' Present' : ` ${new Date(exp.to).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}`}
+                                                        {exp.current ? ' Present' : (exp.to ? ` ${new Date(exp.to).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}` : '')}
                                                     </p>
                                                     {exp.description && (
                                                         <p className="mt-2 text-sm text-gray-600">{exp.description}</p>
@@ -364,13 +419,15 @@ export default function ApplicationReviewPage() {
                                                 </div>
                                             ))}
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <p className="text-gray-500 text-sm italic">No work experience listed</p>
+                                    )}
+                                </div>
 
-                                {/* Education */}
-                                {application.user.education && application.user.education.length > 0 && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-500 mb-3">Education</h4>
+                                {/* Education Section - Always displayed */}
+                                <div>
+                                    <h4 className="text-sm font-medium text-gray-500 mb-3">Education</h4>
+                                    {application.user.education && Array.isArray(application.user.education) && application.user.education.length > 0 ? (
                                         <div className="space-y-4">
                                             {application.user.education.map((edu, index) => (
                                                 <div key={index} className="border-l-2 border-gray-200 pl-4">
@@ -378,7 +435,7 @@ export default function ApplicationReviewPage() {
                                                     <p className="text-gray-700">{edu.school}</p>
                                                     <p className="text-sm text-gray-500">
                                                         {new Date(edu.from).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} -
-                                                        {edu.current ? ' Present' : ` ${new Date(edu.to).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}`}
+                                                        {edu.current ? ' Present' : (edu.to ? ` ${new Date(edu.to).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}` : '')}
                                                     </p>
                                                     {edu.description && (
                                                         <p className="mt-2 text-sm text-gray-600">{edu.description}</p>
@@ -386,8 +443,33 @@ export default function ApplicationReviewPage() {
                                                 </div>
                                             ))}
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <p className="text-gray-500 text-sm italic">No education history listed</p>
+                                    )}
+                                </div>
+
+                                {/* Add a summary card at the bottom with better null checks */}
+                                {((application.user.skills && application.user.skills.length > 0) ||
+                                    (application.user.experience && application.user.experience.length > 0) ||
+                                    (application.user.education && application.user.education.length > 0)) && (
+                                        <div className="mt-8 pt-6 border-t border-gray-200">
+                                            <div className="bg-gray-50 p-4 rounded-sm">
+                                                <h4 className="font-medium text-gray-900 mb-2">Candidate Summary</h4>
+                                                <p className="text-sm text-gray-600">
+                                                    {application.user.firstName} {application.user.lastName} is a candidate with
+                                                    {(application.user.experience && application.user.experience.length)
+                                                        ? ` ${application.user.experience.length} ${application.user.experience.length === 1 ? 'position' : 'positions'} of work experience`
+                                                        : ' no listed work experience'}
+                                                    {(application.user.education && application.user.education.length)
+                                                        ? ` and ${application.user.education.length} ${application.user.education.length === 1 ? 'educational qualification' : 'educational qualifications'}`
+                                                        : ' and no listed education'}.
+                                                    {(application.user.skills && application.user.skills.length)
+                                                        ? ` They have ${application.user.skills.length} skills including ${application.user.skills.slice(0, 3).join(', ')}${application.user.skills.length > 3 ? ', and more.' : '.'} `
+                                                        : ''}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                             </div>
                         </div>
 
