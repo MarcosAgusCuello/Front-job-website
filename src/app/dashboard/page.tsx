@@ -35,7 +35,7 @@ interface Application {
 const CompanyDashboard: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated, isCompany, user, token, logout } = useAuth();
-  
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [recentApplications, setRecentApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -59,7 +59,7 @@ const CompanyDashboard: React.FC = () => {
       const fetchDashboardData = async () => {
         setIsLoading(true);
         setError(null);
-        
+
         try {
           // Fetch company's jobs
           const jobsResponse = await axios.get('http://localhost:5000/api/jobs/company/myjobs', {
@@ -72,12 +72,12 @@ const CompanyDashboard: React.FC = () => {
           const jobsData = jobsResponse.data as { jobs: Job[] };
 
           setJobs(jobsData.jobs);
-          
+
           // Calculate job stats
-          const activeJobs = jobsData.jobs.filter((job: Job) => 
+          const activeJobs = jobsData.jobs.filter((job: Job) =>
             job.status === 'active' || job.status === 'open'
           ).length;
-          
+
           setJobStats({
             totalJobs: jobsData.jobs.length,
             activeJobs,
@@ -85,29 +85,29 @@ const CompanyDashboard: React.FC = () => {
               (total: number, job: Job) => total + (job.applicationsCount || 0), 0
             )
           });
-          
+
           // Fetch recent applications (across all jobs)
           if (jobsData.jobs.length > 0) {
             // For simplicity, get applications for the first few jobs
             const jobIds = jobsData.jobs.slice(0, 3).map((job: Job) => job._id);
-            
-            const recentAppsPromises = jobIds.map((jobId: string) => 
+
+            const recentAppsPromises = jobIds.map((jobId: string) =>
               axios.get(`http://localhost:5000/api/applications/job/${jobId}`, {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { limit: 5 }
               })
             );
-            
+
             const responses = await Promise.all(recentAppsPromises);
-            
+
             // Combine and sort applications by date
             const allApplications = responses.flatMap(response => {
               const data = response.data as { applications?: Application[] };
               return data.applications || [];
-            }).sort((a: Application, b: Application) => 
+            }).sort((a: Application, b: Application) =>
               new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
             ).slice(0, 5); // Keep only the 5 most recent
-            
+
             setRecentApplications(allApplications);
           }
         } catch (err: any) {
@@ -117,7 +117,7 @@ const CompanyDashboard: React.FC = () => {
           setIsLoading(false);
         }
       };
-      
+
       fetchDashboardData();
     } else {
       setIsLoading(false);
@@ -238,9 +238,9 @@ const CompanyDashboard: React.FC = () => {
         </div>
 
         {/* Actions Section */}
-        <div className="mb-8">
-          <Link 
-            href="/jobs/create" 
+        <div className="mb-8 flex space-x-4">
+          <Link
+            href="/jobs/create"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -248,17 +248,26 @@ const CompanyDashboard: React.FC = () => {
             </svg>
             Post a New Job
           </Link>
+          <Link
+            href="/company/messages"
+            className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-black"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            Messages
+          </Link>
         </div>
 
         {/* Recent Jobs Section */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Job Postings</h2>
-          
+
           {jobs.length === 0 ? (
             <div className="bg-white overflow-hidden shadow rounded-lg p-6 text-center">
               <p className="text-gray-500">You haven't posted any jobs yet.</p>
-              <Link 
-                href="/jobs/create" 
+              <Link
+                href="/jobs/create"
                 className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
               >
                 Create your first job
@@ -277,8 +286,8 @@ const CompanyDashboard: React.FC = () => {
                           </p>
                           <div className="ml-2 flex-shrink-0 flex">
                             <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                              ${job.status === 'active' || job.status === 'open' 
-                                ? 'bg-green-100 text-green-800' 
+                              ${job.status === 'active' || job.status === 'open'
+                                ? 'bg-green-100 text-green-800'
                                 : 'bg-gray-100 text-gray-800'}`}
                             >
                               {job.status}
@@ -334,7 +343,7 @@ const CompanyDashboard: React.FC = () => {
                   </li>
                 ))}
               </ul>
-              
+
               {jobs.length > 5 && (
                 <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
                   <Link
@@ -352,13 +361,13 @@ const CompanyDashboard: React.FC = () => {
         {/* Recent Applications Section */}
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Applications</h2>
-          
+
           {recentApplications.length === 0 ? (
             <div className="bg-white overflow-hidden shadow rounded-lg p-6 text-center">
               <p className="text-gray-500">No applications have been received yet.</p>
               {jobs.length === 0 ? (
-                <Link 
-                  href="/jobs/create" 
+                <Link
+                  href="/jobs/create"
                   className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
                 >
                   Create a job to receive applications
@@ -378,15 +387,15 @@ const CompanyDashboard: React.FC = () => {
                           </p>
                           <div className="ml-2 flex-shrink-0 flex">
                             <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                              ${application.status === 'pending' 
-                                ? 'bg-yellow-100 text-yellow-800' 
+                              ${application.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
                                 : application.status === 'interviewing'
-                                ? 'bg-blue-100 text-blue-800'
-                                : application.status === 'accepted'
-                                ? 'bg-green-100 text-green-800'
-                                : application.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'}`}
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : application.status === 'accepted'
+                                    ? 'bg-green-100 text-green-800'
+                                    : application.status === 'rejected'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-gray-100 text-gray-800'}`}
                             >
                               {application.status}
                             </p>
@@ -423,7 +432,7 @@ const CompanyDashboard: React.FC = () => {
                   </li>
                 ))}
               </ul>
-              
+
               {jobs.length > 0 && (
                 <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
                   <Link
@@ -436,6 +445,26 @@ const CompanyDashboard: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Messages Card */}
+        <div className="bg-white rounded-md shadow-sm p-6 mt-12">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Messages</h3>
+            <span className="bg-black text-white text-xs py-1 px-2 rounded-full">New</span>
+          </div>
+          <p className="text-gray-600 mb-4">
+            Communicate with job applicants directly through our messaging system.
+          </p>
+          <Link
+            href="/company/messages"
+            className="inline-flex items-center text-black font-medium hover:underline"
+          >
+            View all messages
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
       </div>
     </div>

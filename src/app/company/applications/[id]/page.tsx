@@ -79,6 +79,7 @@ export default function ApplicationReviewPage() {
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [notes, setNotes] = useState('');
     const [saveNoteStatus, setSaveNoteStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const [initiatingChat, setInitiatingChat] = useState(false);
 
     // Check authentication and redirect if needed
     useEffect(() => {
@@ -183,6 +184,108 @@ export default function ApplicationReviewPage() {
         } catch (err: any) {
             console.error('Error saving notes:', err);
             setSaveNoteStatus('error');
+        }
+    };
+
+    const handleStartChat = async () => {
+        if (!application || !token) return;
+
+        setInitiatingChat(true);
+
+        try {
+            console.log("Starting chat with user:", application.user._id);
+
+            // Step 1: Check if a chat already exists by getting all company chats
+            const chatsResponse = await axios.get(
+                `http://localhost:5000/api/chats/company`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            console.log("Chats retrieved:", chatsResponse.data);
+
+            // Safely find if there's an existing chat with this applicant
+            let existingChat;
+
+            // Check if chatsResponse.data is an array
+            if (Array.isArray(chatsResponse.data)) {
+                // Look for a chat that includes this user
+                existingChat = chatsResponse.data.find(chat => {
+                    // Safely check if participants exists and is an array
+                    if (!chat || !Array.isArray(chat.participants)) {
+                        return false;
+                    }
+
+                    // Find if any participant matches the user ID
+                    return chat.participants.some((p: { _id?: string }) => p && typeof p === 'object' && p._id === application.user._id);
+                });
+            }
+
+            let chatId;
+
+            if (existingChat) {
+                // If chat exists, use its ID
+                chatId = existingChat._id;
+                console.log("Using existing chat:", chatId);
+
+                // Mark chat as read
+                await axios.put(
+                    `http://localhost:5000/api/chats/${chatId}/read`,
+                    {},
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            } else {
+                // If no chat exists, create a new one
+                console.log("Creating new chat for application:", application._id);
+
+                try {
+                    // Use the correct endpoint for creating a chat for an application
+                    const newChatResponse = await axios.post(
+                        `http://localhost:5000/api/chats/application/${application._id}`,
+                        {},  // No body needed as the application ID is in the URL
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+
+                    console.log("Chat creation response:", newChatResponse.data);
+
+                    // Verify we have a proper response with an _id
+                    const chatData = newChatResponse.data as { _id?: string };
+                    if (!chatData || !chatData._id) {
+                        console.error("Chat creation response missing _id:", chatData);
+                        throw new Error("Invalid response from chat creation");
+                    }
+
+                    chatId = chatData._id;
+                    console.log("New chat created with ID:", chatId);
+                } catch (err) {
+                    console.error("Error creating chat:", err);
+                    alert("Failed to create chat. Please try again.");
+                    setInitiatingChat(false);
+                    return;
+                }
+            }
+
+            // Verify we have a valid chatId before redirecting
+            if (!chatId) {
+                console.error("Invalid chat ID after creation/lookup:", chatId);
+                alert("Could not find or create a chat. Please try again.");
+                setInitiatingChat(false);
+                return;
+            }
+
+            // Navigate to the chat page with the valid chatId
+            console.log("Navigating to chat page with ID:", chatId);
+            router.push(`/company/messages/${chatId}`);
+        } catch (err: any) {
+            console.error('Error starting chat:', err);
+            console.error('Error details:', err.response?.data);
+
+            if (err.response?.status === 404) {
+                alert('The chat endpoint was not found. Please contact support.');
+            } else {
+                alert(`Failed to start chat: ${err.response?.data?.message || err.message}`);
+            }
+        } finally {
+            setInitiatingChat(false);
         }
     };
 
@@ -565,6 +668,28 @@ export default function ApplicationReviewPage() {
                         <div className="bg-white rounded-sm shadow-sm p-6">
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
                             <div className="space-y-3">
+                                <button
+                                    onClick={() => handleStartChat()}
+                                    disabled={initiatingChat}
+                                    className="w-full flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-sm text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50"
+                                >
+                                    {initiatingChat ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Initializing Chat...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                            </svg>
+                                            Message Candidate
+                                        </>
+                                    )}
+                                </button>
                                 <a
                                     href={`mailto:${application.user.email}`}
                                     className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
