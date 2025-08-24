@@ -303,21 +303,24 @@ export default function ChatPage() {
                         ) : (
                             <div className="space-y-4">
                                 {chat.messages.map(msg => {
-                                    const isCompanyMessage = isCompany && msg.sender === chat.companyId;
+                                    // Use isFromCompany flag directly instead of comparing sender IDs
+                                    const isCompanyMessage = msg.isFromCompany;
 
                                     return (
                                         <div
                                             key={msg._id}
-                                            className={`flex ${isCompanyMessage ? 'justify-end' : 'justify-start'}`}
+                                            // Reverse the justify alignment - company messages on left, user on right
+                                            className={`flex ${isCompanyMessage ? 'justify-start' : 'justify-end'}`}
                                         >
                                             <div
+                                                // Also swap the styling
                                                 className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${isCompanyMessage
-                                                    ? 'bg-black text-white rounded-br-none'
-                                                    : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                                                    ? 'bg-gray-200 text-gray-800 rounded-bl-none'
+                                                    : 'bg-black text-white rounded-br-none'
                                                     }`}
                                             >
                                                 <p>{msg.content}</p>
-                                                <p className={`text-xs mt-1 ${isCompanyMessage ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                <p className={`text-xs mt-1 ${isCompanyMessage ? 'text-gray-500' : 'text-gray-300'}`}>
                                                     {formatMessageDate(msg.createdAt)}
                                                 </p>
                                             </div>

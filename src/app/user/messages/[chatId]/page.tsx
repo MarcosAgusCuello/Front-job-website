@@ -314,8 +314,15 @@ export default function UserChatPage() {
                                     return (
                                         <div
                                             key={msg._id}
-                                            className={`flex ${isCompanyMessage ? 'justify-start' : 'justify-end'}`}
+                                            className={`flex flex-col ${isCompanyMessage ? 'items-start' : 'items-end'}`}
                                         >
+                                            {/* Add message author label */}
+                                            <span className={`text-xs mb-1 ${isCompanyMessage ? 'text-gray-600' : 'text-gray-600 mr-1'}`}>
+                                                {isCompanyMessage
+                                                    ? chat.companyId?.name || 'Company'
+                                                    : 'You'}
+                                            </span>
+
                                             <div
                                                 className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${isCompanyMessage
                                                     ? 'bg-gray-200 text-gray-800 rounded-bl-none'

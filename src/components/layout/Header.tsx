@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Image from 'next/image';
 
 export default function Header() {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const { isAuthenticated, isCompany, user, logout } = useAuth();
@@ -22,6 +23,13 @@ export default function Header() {
   const handleLogout = () => {
     logout();
     closeMenu();
+    router.push('/auth/login');
+  };
+
+  const handleNavigation = (path: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    closeMenu();
+    router.push(path);
   };
 
   const isActive = (path: string) => {
@@ -31,13 +39,18 @@ export default function Header() {
   // Determine the correct dashboard URL based on user type
   const dashboardUrl = isCompany ? '/dashboard' : '/user/dashboard';
 
+  // Determine the correct profile URL based on user type
+  const profileUrl = isCompany ? '/company/profile' : '/user/profile';
+
   // Get user display name based on account type
-  const getUserDisplayName = () => {
+  const getUserDisplayName = (): string => {
     if (!user) return '';
 
-    if (isCompany && 'companyName' in user) {
+    if (isCompany && 'name' in user && typeof user.name === 'string') {
+      return user.name;
+    } else if (isCompany && 'companyName' in user && typeof user.companyName === 'string') {
       return user.companyName;
-    } else if (!isCompany && 'firstName' in user) {
+    } else if (!isCompany && 'firstName' in user && typeof user.firstName === 'string') {
       return `${user.firstName} ${user.lastName || ''}`.trim();
     }
 
@@ -51,6 +64,15 @@ export default function Header() {
   };
 
   const displayName = getUserDisplayName();
+
+  // Debug information
+  console.log('Auth state:', {
+    isAuthenticated,
+    isCompany,
+    dashboardUrl,
+    profileUrl,
+    pathname
+  });
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
@@ -72,21 +94,21 @@ export default function Header() {
 
             {isAuthenticated ? (
               <>
-                <Link
-                  href={dashboardUrl}
+                <button
+                  onClick={handleNavigation(dashboardUrl)}
                   className={`${isActive(dashboardUrl)}`}
                 >
                   Dashboard
-                </Link>
+                </button>
 
                 {/* User profile section */}
                 <div className="flex items-center ml-4">
-                  <Link href={isCompany ? dashboardUrl : "/user/profile"} className="flex items-center hover:opacity-80">
+                  <button onClick={handleNavigation(profileUrl)} className="flex items-center hover:opacity-80">
                     <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-medium overflow-hidden mr-2">
                       {user && 'avatar' in user && (user as any).avatar ? (
                         <Image
                           src={(user as any).avatar}
-                          alt={displayName || 'User Avatar'}
+                          alt={typeof displayName === 'string' && displayName.length > 0 ? displayName : 'User Avatar'}
                           width={32}
                           height={32}
                           className="h-full w-full object-cover"
@@ -95,12 +117,12 @@ export default function Header() {
                         <span>{getAvatarInitial()}</span>
                       )}
                     </div>
-                    {displayName && (
+                    {typeof displayName === 'string' && displayName.length > 0 && (
                       <span className="text-sm font-medium mr-4 max-w-[120px] truncate">
                         {displayName}
                       </span>
                     )}
-                  </Link>
+                  </button>
                   <button
                     onClick={handleLogout}
                     className="bg-black hover:bg-gray-800 text-white py-2 px-4 rounded-sm transition-colors text-sm"
@@ -166,34 +188,43 @@ export default function Header() {
             {isAuthenticated ? (
               <>
                 {/* Mobile user profile */}
-                <div className="flex items-center py-2">
-                  <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-medium overflow-hidden mr-2">
-                    {user && 'avatar' in user && (user as any).avatar ? (
-                      <Image
-                        src={(user as any).avatar}
-                        alt={displayName || 'User Avatar'}
-                        width={32}
-                        height={32}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span>{getAvatarInitial()}</span>
+                <button onClick={handleNavigation(profileUrl)} className="block w-full text-left">
+                  <div className="flex items-center py-2">
+                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-medium overflow-hidden mr-2">
+                      {user && 'avatar' in user && (user as any).avatar ? (
+                        <Image
+                          src={(user as any).avatar}
+                          alt={displayName || 'User Avatar'}
+                          width={32}
+                          height={32}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span>{getAvatarInitial()}</span>
+                      )}
+                    </div>
+                    {typeof displayName === 'string' && displayName.length > 0 && (
+                      <span className="text-sm font-medium truncate">
+                        {displayName}
+                      </span>
                     )}
                   </div>
-                  {displayName && (
-                    <span className="text-sm font-medium truncate">
-                      {displayName}
-                    </span>
-                  )}
-                </div>
+                </button>
 
-                <Link
-                  href={dashboardUrl}
-                  className={`block py-2 ${isActive(dashboardUrl)}`}
-                  onClick={closeMenu}
+                <button
+                  onClick={handleNavigation(dashboardUrl)}
+                  className={`block w-full text-left py-2 ${isActive(dashboardUrl)}`}
                 >
                   Dashboard
-                </Link>
+                </button>
+
+                <button
+                  onClick={handleNavigation(profileUrl)}
+                  className={`block w-full text-left py-2 ${isActive(profileUrl)}`}
+                >
+                  {isCompany ? 'Company Profile' : 'My Profile'}
+                </button>
+
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left py-2 text-gray-700 hover:text-black"
