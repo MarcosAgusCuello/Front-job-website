@@ -19,7 +19,11 @@ interface Job {
   requirements?: string[];
   responsibilities?: string[];
   location: string;
-  salary?: string;
+  salary?: string | {
+    min: number;
+    max: number;
+    currency: string;
+  };
   type: string;
   status: string;
   skills?: string[];
@@ -34,34 +38,34 @@ export default function JobDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { isAuthenticated, isCompany, token } = useAuth();
-  
+
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
-  
+
   // Format date to readable format
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long', 
+      month: 'long',
       day: 'numeric'
     });
   };
-  
+
   // Fetch job details
   useEffect(() => {
     const fetchJobDetails = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         const response = await axios.get(`http://localhost:5000/api/jobs/${id}`);
         setJob(response.data as Job);
-        
+
         // Check if user has already applied
         if (isAuthenticated && !isCompany && token) {
           try {
@@ -69,14 +73,14 @@ export default function JobDetailPage() {
               'http://localhost:5000/api/applications/user/applications',
               { headers: { Authorization: `Bearer ${token}` } }
             );
-            
+
             // Assert the type of userApplicationsResponse.data
             const data = userApplicationsResponse.data as { applications: any[] };
             // Check if this job is in the user's applications
             const hasApplied = data.applications.some(
               (application: any) => application.job._id === id
             );
-            
+
             setApplied(hasApplied);
           } catch (err) {
             console.error('Error checking application status:', err);
@@ -89,34 +93,34 @@ export default function JobDetailPage() {
         setLoading(false);
       }
     };
-    
+
     if (id) {
       fetchJobDetails();
     }
   }, [id, isAuthenticated, isCompany, token]);
-  
+
   // Handle apply for job
   const handleApply = async () => {
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
     }
-    
+
     if (isCompany) {
       setApplyError('Companies cannot apply for jobs. Please sign in as a job seeker.');
       return;
     }
-    
+
     setApplying(true);
     setApplyError(null);
-    
+
     try {
       await axios.post(
         'http://localhost:5000/api/applications/apply',
         { jobId: id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       setApplied(true);
     } catch (err: any) {
       console.error('Error applying for job:', err);
@@ -125,12 +129,12 @@ export default function JobDetailPage() {
       setApplying(false);
     }
   };
-  
+
   // Handle back button
   const handleBack = () => {
     router.back();
   };
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-10">
@@ -151,7 +155,7 @@ export default function JobDetailPage() {
       </div>
     );
   }
-  
+
   if (error || !job) {
     return (
       <div className="min-h-screen bg-gray-50 py-10">
@@ -174,7 +178,7 @@ export default function JobDetailPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -188,7 +192,7 @@ export default function JobDetailPage() {
           </svg>
           Back to Jobs
         </button>
-        
+
         {/* Job Header */}
         <div className="bg-white rounded-sm shadow-sm p-8 mb-8">
           <div className="sm:flex sm:items-center sm:justify-between">
@@ -199,7 +203,7 @@ export default function JobDetailPage() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 mt-4 sm:mt-0">{job.title}</h1>
                 <div className="mt-2">
-                  <Link 
+                  <Link
                     href={`/companies/${job.company?._id}`}
                     className="text-lg text-gray-700 hover:text-black"
                   >
@@ -229,7 +233,7 @@ export default function JobDetailPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-6 sm:mt-0">
               {applied ? (
                 <div className="inline-flex items-center px-4 py-2 border border-transparent rounded-sm text-sm font-medium text-white bg-green-600">
@@ -247,23 +251,28 @@ export default function JobDetailPage() {
                   {applying ? 'Applying...' : 'Apply Now'}
                 </button>
               )}
-              
+
               {applyError && (
                 <p className="mt-2 text-sm text-red-600">{applyError}</p>
               )}
             </div>
           </div>
-          
+
           {job.salary && (
             <div className="mt-6 inline-flex items-center px-4 py-2 bg-gray-100 rounded-sm text-gray-800">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Salary: {job.salary}
+              Salary: {typeof job.salary === 'string'
+                ? job.salary
+                : (job.salary && typeof job.salary === 'object')
+                  ? `${job.salary.min.toLocaleString()} - ${job.salary.max.toLocaleString()} ${job.salary.currency}`
+                  : 'Not specified'
+              }
             </div>
           )}
         </div>
-        
+
         {/* Job Details */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
@@ -274,7 +283,7 @@ export default function JobDetailPage() {
                 <p className="whitespace-pre-line">{job.description}</p>
               </div>
             </div>
-            
+
             {/* Responsibilities */}
             {job.responsibilities && job.responsibilities.length > 0 && (
               <div className="bg-white rounded-sm shadow-sm p-8">
@@ -286,7 +295,7 @@ export default function JobDetailPage() {
                 </ul>
               </div>
             )}
-            
+
             {/* Requirements */}
             {job.requirements && job.requirements.length > 0 && (
               <div className="bg-white rounded-sm shadow-sm p-8">
@@ -299,7 +308,7 @@ export default function JobDetailPage() {
               </div>
             )}
           </div>
-          
+
           {/* Job Summary Sidebar */}
           <div className="space-y-6">
             {/* Key Information */}
@@ -325,8 +334,8 @@ export default function JobDetailPage() {
                 {job.contactEmail && (
                   <div>
                     <p className="text-sm font-medium text-gray-500">Contact Email</p>
-                    <a 
-                      href={`mailto:${job.contactEmail}`} 
+                    <a
+                      href={`mailto:${job.contactEmail}`}
                       className="mt-1 block text-gray-900 hover:text-black"
                     >
                       {job.contactEmail}
@@ -335,7 +344,7 @@ export default function JobDetailPage() {
                 )}
               </div>
             </div>
-            
+
             {/* Skills */}
             {job.skills && job.skills.length > 0 && (
               <div className="bg-white rounded-sm shadow-sm p-6">
@@ -349,7 +358,7 @@ export default function JobDetailPage() {
                 </div>
               </div>
             )}
-            
+
             {/* Apply Button (Mobile Optimized) */}
             <div className="bg-white rounded-sm shadow-sm p-6 lg:hidden">
               {applied ? (
@@ -369,30 +378,30 @@ export default function JobDetailPage() {
                 </button>
               )}
             </div>
-            
+
             {/* Share Job */}
             <div className="bg-white rounded-sm shadow-sm p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Share This Job</h3>
               <div className="flex space-x-4">
-                <button 
+                <button
                   onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`)}
                   className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
                   aria-label="Share on LinkedIn"
                 >
                   <svg className="h-5 w-5 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                   </svg>
                 </button>
-                <button 
+                <button
                   onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out this job: ${job.title} at ${job.company?.companyName}`)}&url=${encodeURIComponent(window.location.href)}`)}
                   className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
                   aria-label="Share on Twitter"
                 >
                   <svg className="h-5 w-5 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                   </svg>
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href);
                     alert('Link copied to clipboard!');
@@ -408,7 +417,7 @@ export default function JobDetailPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Similar Jobs (Optional) */}
         {/* You could add a section here to show similar jobs */}
       </div>

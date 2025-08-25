@@ -65,15 +65,6 @@ export default function Header() {
 
   const displayName = getUserDisplayName();
 
-  // Debug information
-  console.log('Auth state:', {
-    isAuthenticated,
-    isCompany,
-    dashboardUrl,
-    profileUrl,
-    pathname
-  });
-
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="container mx-auto px-6 py-4">

@@ -6,9 +6,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 type Job = {
-  id: string | number;
+  _id: string; // Change from id to _id to match MongoDB
+  id?: string; // Keep id as optional for backward compatibility
   title: string;
-  company: string | { companyName?: string };
+  company: string | {
+    _id?: string;
+    companyName?: string;
+    name?: string; // Some APIs might return name instead of companyName
+  };
   location: string;
   logo?: string;
 };
@@ -464,7 +469,7 @@ export default function Home() {
                     </div>
                     <div className="flex justify-between items-center">
                       <Link
-                        href={`/jobs/${job.id}`}
+                        href={`/jobs/${job._id || job.id}`}
                         className="text-sm font-medium text-black hover:text-gray-700 transition-colors flex items-center"
                       >
                         View details
