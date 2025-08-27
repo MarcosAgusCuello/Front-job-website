@@ -38,7 +38,7 @@ export default function CreateJobPage() {
     responsibilities: [''],
     location: '',
     salary: '',
-    type: '',
+    type: 'Full-time',
     contactEmail: '',
     // Adding the missing required fields
     skills: [''],
@@ -134,8 +134,6 @@ export default function CreateJobPage() {
     };
 
     try {
-      console.log('User object:', user); // Log the user object to debug
-      console.log('Submitting job data:', jobData);
 
       // Send POST request to create the job
       const response = await axios.post('http://localhost:5000/api/jobs', jobData, {
@@ -144,8 +142,6 @@ export default function CreateJobPage() {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      console.log('Job created successfully:', response.data);
 
       // Navigate to the jobs management page on success
       router.push('/dashboard');

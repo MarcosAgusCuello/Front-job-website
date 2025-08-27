@@ -100,7 +100,7 @@ export default function JobDetailPage() {
   }, [id, isAuthenticated, isCompany, token]);
 
   // Handle apply for job
-  const handleApply = async () => {
+  const handleApplyClick = async () => {
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
@@ -244,7 +244,7 @@ export default function JobDetailPage() {
                 </div>
               ) : (
                 <button
-                  onClick={handleApply}
+                  onClick={handleApplyClick}
                   disabled={applying || isCompany}
                   className="inline-flex items-center px-6 py-3 border border-transparent rounded-sm shadow-sm text-base font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -370,7 +370,7 @@ export default function JobDetailPage() {
                 </div>
               ) : (
                 <button
-                  onClick={handleApply}
+                  onClick={handleApplyClick}
                   disabled={applying || isCompany}
                   className="w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-sm shadow-sm text-base font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -417,9 +417,6 @@ export default function JobDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* Similar Jobs (Optional) */}
-        {/* You could add a section here to show similar jobs */}
       </div>
     </div>
   );
