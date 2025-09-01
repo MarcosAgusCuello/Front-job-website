@@ -1,4 +1,3 @@
-// src/app/dashboard/page.tsx
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -40,6 +39,7 @@ const CompanyDashboard: React.FC = () => {
   const [recentApplications, setRecentApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllJobs, setShowAllJobs] = useState<boolean>(false);
   const [jobStats, setJobStats] = useState({
     totalJobs: 0,
     activeJobs: 0,
@@ -47,13 +47,6 @@ const CompanyDashboard: React.FC = () => {
   });
 
   // Redirect if not authenticated or not a company
-  useEffect(() => {
-    if (!isLoading && (!isAuthenticated || !isCompany)) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, isCompany, isLoading, router]);
-
-  // Fetch company data
   useEffect(() => {
     if (isAuthenticated && isCompany && token) {
       const fetchDashboardData = async () => {
@@ -71,20 +64,54 @@ const CompanyDashboard: React.FC = () => {
           // Assert the type of jobsResponse.data
           const jobsData = jobsResponse.data as { jobs: Job[] };
 
-          setJobs(jobsData.jobs);
-
-          // Calculate job stats
+          // Calculate active jobs
           const activeJobs = jobsData.jobs.filter((job: Job) =>
             job.status === 'active' || job.status === 'open'
           ).length;
 
+          // Get total applications using the new company stats endpoint
+          let totalApplications = 0;
+          try {
+            const companyStatsResponse = await axios.get(
+              'http://localhost:5000/api/applications/stats/company',
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            // Assert the type of companyStatsResponse.data before accessing its properties
+            const companyStatsData = companyStatsResponse.data as { totalApplications?: number };
+            totalApplications = companyStatsData.totalApplications || 0;
+          } catch (err) {
+            console.error("Error fetching company application stats:", err);
+          }
+
+          // Set job stats with accurate total applications count
           setJobStats({
             totalJobs: jobsData.jobs.length,
             activeJobs,
-            totalApplications: jobsData.jobs.reduce(
-              (total: number, job: Job) => total + (job.applicationsCount || 0), 0
-            )
+            totalApplications
           });
+
+          // Fetch application count for each job using the new job stats endpoint
+          const jobsWithApplicationCounts = await Promise.all(
+            jobsData.jobs.map(async (job: Job) => {
+              try {
+                const jobStatsResponse = await axios.get(
+                  `http://localhost:5000/api/applications/stats/job/${job._id}`,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                return {
+                  ...job,
+                  applicationsCount: (jobStatsResponse.data as { totalApplications?: number }).totalApplications || 0
+                };
+              } catch (err) {
+                console.error(`Error fetching application stats for job ${job._id}:`, err);
+                return job;
+              }
+            })
+          );
+
+          setJobs(jobsWithApplicationCounts);
 
           // Fetch recent applications (across all jobs)
           if (jobsData.jobs.length > 0) {
@@ -104,9 +131,21 @@ const CompanyDashboard: React.FC = () => {
             const allApplications = responses.flatMap(response => {
               const data = response.data as { applications?: Application[] };
               return data.applications || [];
-            }).sort((a: Application, b: Application) =>
-              new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
-            ).slice(0, 5); // Keep only the 5 most recent
+            }).sort((a: Application, b: Application) => {
+              // Use our formatDate helper to avoid "Invalid Date" issues
+              try {
+                const dateA = new Date(a.appliedAt);
+                const dateB = new Date(b.appliedAt);
+
+                // If dates are invalid, put them at the end
+                if (isNaN(dateA.getTime())) return 1;
+                if (isNaN(dateB.getTime())) return -1;
+
+                return dateB.getTime() - dateA.getTime();
+              } catch (err) {
+                return 0;
+              }
+            }).slice(0, 5); // Keep only the 5 most recent
 
             setRecentApplications(allApplications);
           }
@@ -122,15 +161,28 @@ const CompanyDashboard: React.FC = () => {
     } else {
       setIsLoading(false);
     }
-  }, [isAuthenticated, isCompany, token]);
+  }, [isAuthenticated, isCompany, token, user?.id]);
 
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    if (!dateString) return 'Not available';
+
+    try {
+      const date = new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Not available';
+      }
+
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Not available';
+    }
   };
 
   if (isLoading) {
@@ -276,7 +328,7 @@ const CompanyDashboard: React.FC = () => {
           ) : (
             <div className="bg-white shadow overflow-hidden sm:rounded-md">
               <ul className="divide-y divide-gray-200">
-                {jobs.slice(0, 5).map((job) => (
+                {(showAllJobs ? jobs : jobs.slice(0, 5)).map((job) => (
                   <li key={job._id}>
                     <div className="px-4 py-4 sm:px-6">
                       <div className="flex items-center justify-between">
@@ -345,13 +397,16 @@ const CompanyDashboard: React.FC = () => {
               </ul>
 
               {jobs.length > 5 && (
-                <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
-                  <Link
-                    href="/jobs/manage"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 flex justify-between items-center">
+                  <button
+                    onClick={() => setShowAllJobs(prevState => !prevState)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-500 flex items-center"
                   >
-                    View all jobs <span aria-hidden="true">→</span>
-                  </Link>
+                    {showAllJobs ? "Show fewer jobs" : `View all jobs (${jobs.length})`}
+                    <span aria-hidden="true" className="ml-1">
+                      {showAllJobs ? "↑" : "↓"}
+                    </span>
+                  </button>
                 </div>
               )}
             </div>
