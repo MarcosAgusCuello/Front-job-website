@@ -438,7 +438,7 @@ const CompanyDashboard: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
                           <p className="text-sm font-medium text-gray-900 truncate">
-                            {application.user.firstName} {application.user.lastName}
+                            {application.user ? `${application.user.firstName} ${application.user.lastName}` : 'Unknown User'}
                           </p>
                           <div className="ml-2 flex-shrink-0 flex">
                             <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

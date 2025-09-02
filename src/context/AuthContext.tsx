@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Login function
-  const login = async (email: string, password: string, isCompanyLogin = false) => {
+  const login = async (email: string, password: string, isCompanyLogin?: boolean ) => {
     setLoading(true);
     setError(null);
     
@@ -129,7 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(token);
       setUser(userData);
       setIsAuthenticated(true);
-      setIsCompany(isCompanyLogin);
+      setIsCompany(!!isCompanyLogin);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
       setError(errorMessage);

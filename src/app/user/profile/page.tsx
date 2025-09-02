@@ -898,7 +898,7 @@ export default function ProfilePage() {
     if (!token) return;
 
     try {
-      await axios.delete('http://localhost:5000/api/users', {
+      await axios.delete('http://localhost:5000/api/users/', {
         headers: {
           Authorization: `Bearer ${token}`
         }

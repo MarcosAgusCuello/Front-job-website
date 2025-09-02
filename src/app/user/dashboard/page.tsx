@@ -35,6 +35,8 @@ const UserDashboard: React.FC = () => {
 
     const [applications, setApplications] = useState<Application[]>([]);
     const [savedJobs, setSavedJobs] = useState<Job[]>([]);
+    const [isWithdrawing, setIsWithdrawing] = useState<string | null>(null);
+    const [withdrawError, setWithdrawError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState({
@@ -105,6 +107,79 @@ const UserDashboard: React.FC = () => {
             month: 'short',
             day: 'numeric'
         });
+    };
+
+    const handleWithdrawApplication = async (applicationId: string) => {
+        if (!token) return;
+
+        setIsWithdrawing(applicationId);
+        setWithdrawError(null);
+
+        try {
+            const response = await axios.delete(`http://localhost:5000/api/applications/withdraw/${applicationId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            console.log("Withdrawal response:", response.data); // Add logging
+
+            // Update the applications list by removing the withdrawn application
+            setApplications(applications.filter(app => app._id !== applicationId));
+
+            // Update stats
+            setStats(prev => ({
+                ...prev,
+                totalApplications: prev.totalApplications - 1,
+                activeApplications: prev.activeApplications - (
+                    applications.find(app => app._id === applicationId)?.status !== 'rejected' &&
+                        applications.find(app => app._id === applicationId)?.status !== 'accepted' ? 1 : 0
+                ),
+                interviewInvites: prev.interviewInvites - (
+                    applications.find(app => app._id === applicationId)?.status === 'interviewing' ? 1 : 0
+                )
+            }));
+        } catch (err: any) {
+            console.error("Error withdrawing application:", err);
+            console.error("Response details:", err.response?.data); // Add detailed error logging
+            setWithdrawError(
+                err.response?.data?.message || "Failed to withdraw application. Please try again."
+            );
+            // Don't throw the error - handle it here
+        } finally {
+            setIsWithdrawing(null);
+        }
+    };
+
+    const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+    const [applicationToWithdraw, setApplicationToWithdraw] = useState<string | null>(null);
+
+    // Add these functions to handle the confirmation flow
+    const initiateWithdraw = (applicationId: string) => {
+        setApplicationToWithdraw(applicationId);
+        setShowConfirmModal(true);
+    };
+
+    const confirmWithdraw = async () => {
+        if (applicationToWithdraw) {
+            try {
+                await handleWithdrawApplication(applicationToWithdraw);
+            } catch (err) {
+                console.error("Error in withdrawal process:", err);
+                // Still close the modal even if there's an error
+            } finally {
+                setShowConfirmModal(false);
+                setApplicationToWithdraw(null);
+            }
+        } else {
+            setShowConfirmModal(false);
+            setApplicationToWithdraw(null);
+        }
+    };
+
+    const cancelWithdraw = () => {
+        setShowConfirmModal(false);
+        setApplicationToWithdraw(null);
     };
 
     // Calculate days since application
@@ -318,13 +393,36 @@ const UserDashboard: React.FC = () => {
                                                         {application.job.company?.companyName || 'Company'}
                                                     </p>
                                                 </div>
-                                                <div className="ml-2 flex-shrink-0 flex">
+                                                <div className="ml-2 flex-shrink-0 flex items-center space-x-2">
                                                     <p className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(application.status)}`}>
                                                         {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                                                     </p>
+
+                                                    {/* Add withdraw button */}
+                                                    <button
+                                                        onClick={() => initiateWithdraw(application._id)}
+                                                        disabled={isWithdrawing === application._id || application.status === 'accepted'}
+                                                        className={`inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs leading-4 font-medium rounded-sm 
+              ${(isWithdrawing === application._id || application.status === 'accepted')
+                                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                : 'text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-black'}`}
+                                                    >
+                                                        {isWithdrawing === application._id ? (
+                                                            <span className="flex items-center">
+                                                                <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                </svg>
+                                                                Withdrawing...
+                                                            </span>
+                                                        ) : (
+                                                            'Withdraw'
+                                                        )}
+                                                    </button>
                                                 </div>
                                             </div>
 
+                                            {/* Keep the existing application details */}
                                             <div className="mt-2 sm:flex sm:justify-between">
                                                 <div className="sm:flex">
                                                     <p className="flex items-center text-sm text-gray-500">
@@ -355,6 +453,13 @@ const UserDashboard: React.FC = () => {
                                             {application.updatedAt && application.status !== 'pending' && (
                                                 <div className="mt-2 text-sm text-gray-500 italic">
                                                     Status updated: {formatDate(application.updatedAt)}
+                                                </div>
+                                            )}
+
+                                            {/* Add error message if withdrawal failed */}
+                                            {withdrawError && isWithdrawing === application._id && (
+                                                <div className="mt-2 text-sm text-red-600">
+                                                    {withdrawError}
                                                 </div>
                                             )}
                                         </div>
@@ -430,7 +535,61 @@ const UserDashboard: React.FC = () => {
 
                 {/* Recommended Jobs Section - Optional */}
                 {/* You could add a section here for job recommendations based on user profile/applications */}
+
+
             </div>
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && (
+                <div className="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                    <div className="flex items-center justify-center min-h-screen">
+                        {/* Background overlay */}
+                        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+                        {/* This centered span helps with vertical alignment */}
+                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                        {/* Modal panel - smaller size */}
+                        <div className="relative inline-block align-middle bg-white rounded-md text-left overflow-hidden shadow-xl transform transition-all max-w-sm w-full mx-4">
+                            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <div className="sm:flex sm:items-start">
+                                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                        <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                    </div>
+                                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                        <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                            Withdraw Application
+                                        </h3>
+                                        <div className="mt-2">
+                                            <p className="text-sm text-gray-500">
+                                                Are you sure you want to withdraw this application? This action cannot be undone.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                <button
+                                    type="button"
+                                    className="w-full inline-flex justify-center rounded-sm border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                                    onClick={confirmWithdraw}
+                                >
+                                    Withdraw
+                                </button>
+                                <button
+                                    type="button"
+                                    className="mt-3 w-full inline-flex justify-center rounded-sm border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                    onClick={cancelWithdraw}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

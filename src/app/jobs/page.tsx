@@ -49,15 +49,14 @@ const typeOptions = [
 export default function JobsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // State for jobs and pagination
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalJobs, setTotalJobs] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   // State for filters
   const [filters, setFilters] = useState<JobFilters>({
     title: searchParams.get('title') || '',
@@ -65,35 +64,34 @@ export default function JobsPage() {
     type: searchParams.get('type') || '',
     skills: searchParams.get('skills') ? searchParams.get('skills')!.split(',') : []
   });
-  
+
   // State for search input
   const [searchInput, setSearchInput] = useState(filters.title || '');
   const [locationInput, setLocationInput] = useState(filters.location || '');
-  
+
   const limit = 10; // Number of jobs per page
-  
+
   // Fetch jobs with current filters and pagination
   const fetchJobs = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Build query params
       const params = new URLSearchParams();
       params.append('page', currentPage.toString());
       params.append('limit', limit.toString());
-      
+
       if (filters.title) params.append('title', filters.title);
       if (filters.location) params.append('location', filters.location);
       if (filters.type) params.append('type', filters.type);
       if (filters.skills && filters.skills.length > 0) {
         params.append('skills', filters.skills.join(','));
       }
-      
+
       const response = await axios.get<{ jobs: Job[]; total: number }>(`http://localhost:5000/api/jobs?${params.toString()}`);
-      
+
       setJobs(response.data.jobs);
-      setTotalJobs(response.data.total);
       setTotalPages(Math.ceil(response.data.total / limit));
     } catch (err: any) {
       console.error('Error fetching jobs:', err);
@@ -103,91 +101,118 @@ export default function JobsPage() {
       setLoading(false);
     }
   };
-  
+
   // Update URL with current filters
   const updateUrlParams = () => {
     const params = new URLSearchParams();
-    
+
     if (filters.title) params.append('title', filters.title);
     if (filters.location) params.append('location', filters.location);
     if (filters.type) params.append('type', filters.type);
     if (filters.skills && filters.skills.length > 0) {
       params.append('skills', filters.skills.join(','));
     }
-    
+
     // Update URL without triggering navigation
     const newUrl = `/jobs?${params.toString()}`;
     window.history.pushState({}, '', newUrl);
   };
-  
+
   // Handle search form submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     setFilters(prev => ({
       ...prev,
       title: searchInput,
       location: locationInput
     }));
-    
+
     setCurrentPage(1); // Reset to first page when searching
   };
-  
+
   // Handle filter changes
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
+
     setFilters(prev => ({
       ...prev,
       [name]: value
     }));
-    
+
     setCurrentPage(1); // Reset to first page when filtering
   };
-  
+
   // Handle pagination
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo(0, 0); // Scroll to top when changing page
   };
-  
+
   // Format date to readable format
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-  
-  // Calculate time since job was posted (e.g., "Posted 3 days ago")
-  const getTimeSincePosted = (dateString: string) => {
-    const now = new Date();
-    const postedDate = new Date(dateString);
-    const diffTime = Math.abs(now.getTime() - postedDate.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) {
-      return 'Posted today';
-    } else if (diffDays === 1) {
-      return 'Posted yesterday';
-    } else if (diffDays < 7) {
-      return `Posted ${diffDays} days ago`;
-    } else if (diffDays < 30) {
-      const weeks = Math.floor(diffDays / 7);
-      return `Posted ${weeks} week${weeks > 1 ? 's' : ''} ago`;
-    } else {
-      return `Posted on ${formatDate(dateString)}`;
+    if (!dateString) return 'Not available';
+
+    try {
+      const date = new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Not available';
+      }
+
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Not available';
     }
   };
-  
+
+  // Calculate time since job was posted 
+  const getTimeSincePosted = (dateString: string) => {
+    
+    if (!dateString) return 'Date not available';
+
+    try {
+      const now = new Date();
+      const postedDate = new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(postedDate.getTime())) {
+        return 'Recently posted';
+      }
+
+      const diffTime = Math.abs(now.getTime() - postedDate.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        return 'Posted today';
+      } else if (diffDays === 1) {
+        return 'Posted yesterday';
+      } else if (diffDays < 7) {
+        return `Posted ${diffDays} days ago`;
+      } else if (diffDays < 30) {
+        const weeks = Math.floor(diffDays / 7);
+        return `Posted ${weeks} week${weeks > 1 ? 's' : ''} ago`;
+      } else {
+        return `Posted on ${formatDate(dateString)}`;
+      }
+    } catch (error) {
+      console.error('Error calculating time since posting:', error);
+      return 'Recently posted';
+    }
+  };
+
   // Fetch jobs when filters or pagination changes
   useEffect(() => {
     fetchJobs();
     updateUrlParams();
   }, [filters, currentPage]);
-  
+
   return (
     <div className="bg-gray-50 min-h-screen py-10">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -195,7 +220,7 @@ export default function JobsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Find Your Next Opportunity</h1>
           <p className="mt-2 text-gray-600">Browse through our curated list of available positions</p>
         </div>
-        
+
         {/* Search and Filters Section */}
         <div className="bg-white rounded-sm shadow-sm p-6 mb-8">
           <form onSubmit={handleSearch} className="space-y-4">
@@ -214,7 +239,7 @@ export default function JobsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm shadow-sm focus:outline-none focus:ring-black focus:border-black"
                 />
               </div>
-              
+
               {/* Location Search */}
               <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
@@ -229,7 +254,7 @@ export default function JobsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm shadow-sm focus:outline-none focus:ring-black focus:border-black"
                 />
               </div>
-              
+
               {/* Job Type Filter */}
               <div>
                 <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
@@ -250,7 +275,7 @@ export default function JobsPage() {
                 </select>
               </div>
             </div>
-            
+
             <div className="flex justify-end">
               <button
                 type="submit"
@@ -261,17 +286,14 @@ export default function JobsPage() {
             </div>
           </form>
         </div>
-        
+
         {/* Results Section */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-gray-700">
-              {loading ? 'Searching...' : `Showing ${jobs.length} of ${totalJobs} jobs`}
-            </p>
-            
+
             <div className="flex items-center">
               <span className="mr-2 text-sm text-gray-700">Sort by:</span>
-              <select 
+              <select
                 className="border border-gray-300 rounded-sm px-3 py-1 text-sm focus:outline-none focus:ring-black focus:border-black"
               >
                 <option value="newest">Newest</option>
@@ -279,13 +301,13 @@ export default function JobsPage() {
               </select>
             </div>
           </div>
-          
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-sm mb-6">
               {error}
             </div>
           )}
-          
+
           {loading ? (
             <div className="bg-white rounded-sm shadow-sm p-8 flex justify-center">
               <div className="animate-pulse flex flex-col space-y-4 w-full">
@@ -355,18 +377,18 @@ export default function JobsPage() {
                           </div>
                         </div>
                         <div className="text-sm text-gray-500">
-                          {getTimeSincePosted(job.createdAt)}
+                          {getTimeSincePosted(job.createdAt || '')}
                         </div>
                       </div>
-                      
+
                       <div className="mt-4">
                         <p className="text-gray-600 line-clamp-2">
-                          {job.description.length > 150 
-                            ? `${job.description.substring(0, 150)}...` 
+                          {job.description.length > 150
+                            ? `${job.description.substring(0, 150)}...`
                             : job.description}
                         </p>
                       </div>
-                      
+
                       {job.skills && job.skills.length > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2">
                           {job.skills.slice(0, 4).map((skill, index) => (
@@ -388,7 +410,7 @@ export default function JobsPage() {
             </div>
           )}
         </div>
-        
+
         {/* Pagination */}
         {!loading && totalPages > 1 && (
           <div className="flex justify-center mt-10">
@@ -400,7 +422,7 @@ export default function JobsPage() {
               >
                 Previous
               </button>
-              
+
               {[...Array(totalPages)].map((_, index) => {
                 const pageNumber = index + 1;
                 // Only show a few pages around the current page
@@ -413,11 +435,10 @@ export default function JobsPage() {
                     <button
                       key={pageNumber}
                       onClick={() => handlePageChange(pageNumber)}
-                      className={`w-8 h-8 mx-1 flex items-center justify-center rounded-sm ${
-                        currentPage === pageNumber
-                          ? 'bg-black text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
+                      className={`w-8 h-8 mx-1 flex items-center justify-center rounded-sm ${currentPage === pageNumber
+                        ? 'bg-black text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                        }`}
                     >
                       {pageNumber}
                     </button>
@@ -430,7 +451,7 @@ export default function JobsPage() {
                 }
                 return null;
               })}
-              
+
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
